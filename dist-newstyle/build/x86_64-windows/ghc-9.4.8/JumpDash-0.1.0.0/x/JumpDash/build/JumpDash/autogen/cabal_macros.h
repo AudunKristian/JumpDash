@@ -20,6 +20,16 @@
   (major1) == 4 && (major2) <  17 || \
   (major1) == 4 && (major2) == 17 && (minor) <= 2)
 #endif /* MIN_VERSION_base */
+/* package gloss-1.13.2.2 */
+#ifndef VERSION_gloss
+#define VERSION_gloss "1.13.2.2"
+#endif /* VERSION_gloss */
+#ifndef MIN_VERSION_gloss
+#define MIN_VERSION_gloss(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  13 || \
+  (major1) == 1 && (major2) == 13 && (minor) <= 2)
+#endif /* MIN_VERSION_gloss */
 
 /* tool gcc-14.0.6 */
 #ifndef TOOL_VERSION_gcc
