@@ -1,0 +1,12 @@
+{
+    "emeraldwalk.runonsave": {
+      "commands": [
+        {
+          "match": ".*\\.hs$",
+          "cmd": "cabal run",
+          "runIn": "integratedTerminal"
+        }
+      ]
+    }
+  }
+  

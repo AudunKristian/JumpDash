@@ -23,7 +23,7 @@ ground = translate (-400) (-300) $
            , color black $ lineLoop groundShape
            ]
   where
-    groundShape = [(0,0), (0,250), (800,250), (800,0)]
+    groundShape = [(0,0), (0,260), (800,260), (800,0)]
 
 main :: IO ()
 main = display window background (Pictures [ground, player])
