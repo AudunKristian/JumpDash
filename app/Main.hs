@@ -29,20 +29,20 @@ addBorder x y = color black $ rectangleWire x y
 
 initialObstacles :: [Position]
 initialObstacles =
-  [ (0, -15)
-  , (200, 80)
-  , (600, 55)
+  [ 
+    (200, 80)
+  , (600, 80)
   , (900, -15)
   , (1200, 100)
-  , (1500, 30)
+  , (1500, 40)
   , (1800, -15)
   , (2100, 70)
   , (2400, -15)
   , (2700, 90)
   , (3000, 40)
-  , (3300, -10)
+  , (3300, -15)
   , (3600, 60)
-  , (3900, 20)
+  , (3900, -15)
   ]
 
 
@@ -99,7 +99,7 @@ colidesWithPlayer :: Position -> Position -> Bool
 colidesWithPlayer (x1, y1) (x2, y2) = 
   let dx = abs (x1 - x2)
       dy = abs (y1 - y2)
-  in dx <= 70 && dy <= 70 && dy > 10
+  in dx <= 70 && dy <= 70
 
 
 handleEvent :: Event -> GameState -> GameState
