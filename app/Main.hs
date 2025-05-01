@@ -12,10 +12,11 @@ data GameState = GameState
     playerRotation  :: Float,  
     playerRotationVelocity :: Float,
     obstacles :: [Position],
-    surfacesY :: [Float]
+    surfacesY :: [Float],
+    hasCrashed :: Bool
   }
 
---type GameMonad = StateT GameState IO
+--type GameMonad = gsT GameState IO
 
 window :: Display
 window = InWindow "Jump Dash" (1000, 600) (10, 10)
@@ -66,26 +67,50 @@ drawObstacle (x, y) = translate x y $ pictures
     addBorder 70 70
   ]
 
+drawGameOverScreen :: Picture
+drawGameOverScreen = pictures [ drawColorOverlay, drawGameOverText, drawStartOverText]
+ 
+drawColorOverlay :: Picture 
+drawColorOverlay = color (makeColor 0.5 0.5 0.5 0.9) $ rectangleSolid 1000 600
+
+drawGameOverText :: Picture
+drawGameOverText = translate (-250) (20) $ scale 0.5 0.5 $ color white $ text "Game Over"
+
+drawStartOverText :: Picture 
+drawStartOverText = translate (-250) (-40) $ scale 0.2 0.2 $ color white $ text "Press r to try again"
+
 initialState :: GameState
-initialState = GameState (-350, -15) 0 False 0 0 initialObstacles []
+initialState = GameState (-350, -15) 0 False 0 0 initialObstacles [] False
 
 drawGame :: GameState -> Picture
-drawGame gs = pictures
+drawGame gs = pictures $
   [ translate x y $
       rotate (playerRotation gs) $
       drawPlayer
   , translate 0 (-200) $ drawGround
   , pictures $ map drawObstacle (obstacles gs)
-  ]
+  ] ++ if hasCrashed gs 
+    then [drawGameOverScreen]
+    else []
+
   where (x, y) = playerPos gs
 
+colidesWithPlayer :: Position -> Position -> Bool
+colidesWithPlayer (x1, y1) (x2, y2) = 
+  let dx = abs (x1 - x2)
+      dy = abs (y1 - y2)
+  in dx <= 70 && dy <= 70 && dy > 10
+
+
 handleEvent :: Event -> GameState -> GameState
-handleEvent (EventKey (SpecialKey KeySpace) Down _ _) state | not (isJumping state) = state { isJumping = True, playerVelocityY = 1000, playerRotationVelocity = -1500}
-handleEvent _ state = state
+handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs | not (isJumping gs) = gs { isJumping = True, playerVelocityY = 1000, playerRotationVelocity = -1500}
+handleEvent _ gs = gs
 
 updateGame :: Float -> GameState -> GameState
-updateGame dt gs = gs { playerPos = (x, y'), playerVelocityY = vy', playerRotation = p', playerRotationVelocity = vp',  isJumping = isJumping', obstacles = obstacles'}
-
+updateGame dt gs 
+ | hasCrashed gs = gs
+ | otherwise = gs { playerPos = (x, y'), playerVelocityY = vy', playerRotation = p', playerRotationVelocity = vp',  isJumping = isJumping', obstacles = obstacles', hasCrashed = hasCrashed'}
+  
   where
     (x, y) = playerPos gs
     vy     = playerVelocityY gs
@@ -99,10 +124,8 @@ updateGame dt gs = gs { playerPos = (x, y'), playerVelocityY = vy', playerRotati
     vp'    = if isJumping' then vp * 0.95 else 0
     p'     = p + vp * dt
 
-    obstacles' = fmap (\(z, w) -> ((z - (70 * dt)), w)) (obstacles gs)
-
-
-    
+    obstacles' = fmap (\(z, w) -> ((z - (400 * dt)), w)) (obstacles gs)
+    hasCrashed' = any (colidesWithPlayer (x, y')) obstacles' 
 
 main :: IO ()
 main = play window background 60 initialState drawGame handleEvent updateGame
