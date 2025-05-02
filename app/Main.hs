@@ -35,7 +35,7 @@ initialObstacles =
   [ 
     (600, 80)
   , (900, -15)
-  , (1200, 100) 
+  , (1200, -15) 
   , (1500, 40)
   , (1800, -15)
   , (2100, 70)
@@ -45,6 +45,14 @@ initialObstacles =
   , (3300, -15)
   , (3600, 60)
   , (3900, -15)
+  , (4200, -15)
+  , (4500, -15)
+  , (4570, -15)
+  , (4700, -15)
+  , (4760, -15)
+  , (5000, -15)
+  , (5070, -15)
+  , (7600, 60)
   ]
 
 
@@ -69,31 +77,37 @@ drawObstacle (x, y) = translate x y $ pictures
     addBorder 70 70
   ]
 
-drawGameOverScreen :: Picture
-drawGameOverScreen = pictures [ drawColorOverlay, 
-                                (drawText ((-180), 20) 0.5 "Game Over"), 
-                                (drawText ((-250), (-100)) 0.2 "Press [Space] to try again"),
-                                (drawText ((-250), (-160)) 0.2 "Press [Backspace] for main menu")
-                              ]
 
 drawMainMenuScreen :: Picture
 drawMainMenuScreen = pictures [ drawColorOverlay, 
                                 (drawText ((-180), (20)) 0.5 "Jump Dash"), 
-                                (drawText ((-250), (-100)) 0.2 "Press [Space] to start"),
-                                (drawText ((-250), (-160)) 0.2 "Press [C] for controls")
+                                (drawText ((-250), (-100)) 0.2 "Press [Enter] to start"),
+                                (drawText ((-250), (-160)) 0.2 "Press [C] for controls"),
+                                (drawText ((-250), (-220)) 0.2 "Press [Esc] to quit")
                               ]
 
 drawControlsScreen :: Picture
 drawControlsScreen = pictures [ drawColorOverlay, 
-                                (drawText ((-180), (-40)) 0.5 "Jump Dash"), 
-                                (drawText ((-180), (-40)) 0.2 "Press [Enter] to start!")
+                                (drawText ((-180), (20)) 0.5 "Jump Dash"), 
+                                (drawText ((-250), (-100)) 0.2 "Press [Space] to jump. Don't hit red boxes."),
+                                (drawText ((-250), (-160)) 0.2 "Press [P] to pause the game"),
+                                (drawText ((-250), (-220)) 0.2 "Press [M] for main manu")
                               ]
 
 drawPausedScreen :: Picture
 drawPausedScreen = pictures [ drawColorOverlay, 
-                                (drawText ((-180), (-40)) 0.5 "Jump Dash"), 
-                                (drawText ((-180), (-40)) 0.2 "Press [Enter] to start!")
+                                (drawText ((-180), (-20)) 0.5 "Paused"), 
+                                (drawText ((-180), (-100)) 0.2 "Press [R] to resume game"),
+                                (drawText ((-250), (-160)) 0.2 "Press [M] for main menu")
                               ]
+
+drawGameOverScreen :: Picture
+drawGameOverScreen = pictures [ drawColorOverlay, 
+                                (drawText ((-180), 20) 0.5 "Game Over"), 
+                                (drawText ((-250), (-100)) 0.2 "Press [Enter] to try again"),
+                                (drawText ((-250), (-160)) 0.2 "Press [M] for main menu")
+                              ]
+
 
 drawColorOverlay :: Picture 
 drawColorOverlay = color (makeColor 0.5 0.5 0.5 0.9) $ rectangleSolid 1000 600
@@ -130,9 +144,13 @@ colidesWithPlayer (x1, y1) (x2, y2) =
 
 
 handleEvent :: Event -> GameState -> GameState
-handleEvent (EventKey (SpecialKey KeyBackspace) Down _ _) gs  | gameStatus gs == GameOver = (initialState MainMenu)
-handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs      | gameStatus gs `elem` [Paused, MainMenu, GameOver] = (initialState Running)
-                                                              | not (isJumping gs) = gs { isJumping = True, playerVelocityY = 1000, playerRotationVelocity = -1500} 
+handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs  | not (isJumping gs) = gs { isJumping = True, playerVelocityY = 1080, playerRotationVelocity = -1500}
+handleEvent (EventKey (Char 'm') Down _ _) gs             | gameStatus gs `elem` [GameOver, Paused, Controls] = (initialState MainMenu)
+handleEvent (EventKey (SpecialKey KeyEnter) Down _ _) gs  | gameStatus gs `elem` [MainMenu, GameOver] = (initialState Running)
+handleEvent (EventKey (Char 'p') Down _ _) gs             | gameStatus gs == Running = gs { gameStatus = Paused}
+handleEvent (EventKey (Char 'r') Down _ _) gs             | gameStatus gs == Running = gs { gameStatus = Running}
+handleEvent (EventKey (Char 'r') Down _ _) gs             | gameStatus gs == Running = gs { gameStatus = Running}
+handleEvent (EventKey (Char 'c') Down _ _) gs             | gameStatus gs == MainMenu = gs { gameStatus = Controls}
 handleEvent _ gs = gs
 
 updateGame :: Float -> GameState -> GameState
