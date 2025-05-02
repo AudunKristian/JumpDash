@@ -5,6 +5,9 @@ import Graphics.Gloss.Interface.Pure.Game
 
 type Position = (Float, Float)
 
+data GameStatus = MainMenu | Running | Paused | GameOver | Controls
+  deriving (Eq, Show)
+
 data GameState = GameState
   { playerPos :: Position,
     playerVelocityY :: Float,
@@ -13,7 +16,7 @@ data GameState = GameState
     playerRotationVelocity :: Float,
     obstacles :: [Position],
     surfacesY :: [Float],
-    hasCrashed :: Bool
+    gameStatus :: GameStatus
   }
 
 --type GameMonad = gsT GameState IO
@@ -30,10 +33,9 @@ addBorder x y = color black $ rectangleWire x y
 initialObstacles :: [Position]
 initialObstacles =
   [ 
-    (200, 80)
-  , (600, 80)
+    (600, 80)
   , (900, -15)
-  , (1200, 100)
+  , (1200, 100) 
   , (1500, 40)
   , (1800, -15)
   , (2100, 70)
@@ -68,19 +70,46 @@ drawObstacle (x, y) = translate x y $ pictures
   ]
 
 drawGameOverScreen :: Picture
-drawGameOverScreen = pictures [ drawColorOverlay, drawGameOverText, drawStartOverText]
- 
+drawGameOverScreen = pictures [ drawColorOverlay, 
+                                (drawText ((-180), 20) 0.5 "Game Over"), 
+                                (drawText ((-250), (-100)) 0.2 "Press [Space] to try again"),
+                                (drawText ((-250), (-160)) 0.2 "Press [Backspace] for main menu")
+                              ]
+
+drawMainMenuScreen :: Picture
+drawMainMenuScreen = pictures [ drawColorOverlay, 
+                                (drawText ((-180), (20)) 0.5 "Jump Dash"), 
+                                (drawText ((-250), (-100)) 0.2 "Press [Space] to start"),
+                                (drawText ((-250), (-160)) 0.2 "Press [C] for controls")
+                              ]
+
+drawControlsScreen :: Picture
+drawControlsScreen = pictures [ drawColorOverlay, 
+                                (drawText ((-180), (-40)) 0.5 "Jump Dash"), 
+                                (drawText ((-180), (-40)) 0.2 "Press [Enter] to start!")
+                              ]
+
+drawPausedScreen :: Picture
+drawPausedScreen = pictures [ drawColorOverlay, 
+                                (drawText ((-180), (-40)) 0.5 "Jump Dash"), 
+                                (drawText ((-180), (-40)) 0.2 "Press [Enter] to start!")
+                              ]
+
 drawColorOverlay :: Picture 
 drawColorOverlay = color (makeColor 0.5 0.5 0.5 0.9) $ rectangleSolid 1000 600
 
-drawGameOverText :: Picture
-drawGameOverText = translate (-250) (20) $ scale 0.5 0.5 $ color white $ text "Game Over"
+drawText :: Position -> Float -> String -> Picture
+drawText (x, y) scaleFactor inputText = translate (x) (y) $ scale scaleFactor scaleFactor $ color white $ text inputText
 
-drawStartOverText :: Picture 
-drawStartOverText = translate (-250) (-40) $ scale 0.2 0.2 $ color white $ text "Press r to try again"
+getTextScreen :: GameStatus -> Picture
+getTextScreen MainMenu = drawMainMenuScreen
+getTextScreen GameOver = drawGameOverScreen
+getTextScreen Controls = drawControlsScreen
+getTextScreen Paused   = drawPausedScreen
+getTextScreen _  = blank
 
-initialState :: GameState
-initialState = GameState (-350, -15) 0 False 0 0 initialObstacles [] False
+initialState :: GameStatus -> GameState
+initialState gameStatus = GameState (-350, -15) 0 False 0 0 initialObstacles [] gameStatus
 
 drawGame :: GameState -> Picture
 drawGame gs = pictures $
@@ -89,9 +118,7 @@ drawGame gs = pictures $
       drawPlayer
   , translate 0 (-200) $ drawGround
   , pictures $ map drawObstacle (obstacles gs)
-  ] ++ if hasCrashed gs 
-    then [drawGameOverScreen]
-    else []
+  ] ++ [getTextScreen (gameStatus gs)]
 
   where (x, y) = playerPos gs
 
@@ -103,13 +130,15 @@ colidesWithPlayer (x1, y1) (x2, y2) =
 
 
 handleEvent :: Event -> GameState -> GameState
-handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs | not (isJumping gs) = gs { isJumping = True, playerVelocityY = 1000, playerRotationVelocity = -1500}
+handleEvent (EventKey (SpecialKey KeyBackspace) Down _ _) gs  | gameStatus gs == GameOver = (initialState MainMenu)
+handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs      | gameStatus gs `elem` [Paused, MainMenu, GameOver] = (initialState Running)
+                                                              | not (isJumping gs) = gs { isJumping = True, playerVelocityY = 1000, playerRotationVelocity = -1500} 
 handleEvent _ gs = gs
 
 updateGame :: Float -> GameState -> GameState
 updateGame dt gs 
- | hasCrashed gs = gs
- | otherwise = gs { playerPos = (x, y'), playerVelocityY = vy', playerRotation = p', playerRotationVelocity = vp',  isJumping = isJumping', obstacles = obstacles', hasCrashed = hasCrashed'}
+ | gameStatus gs /= Running = gs
+ | otherwise = gs { playerPos = (x, y'), playerVelocityY = vy', playerRotation = p', playerRotationVelocity = vp',  isJumping = isJumping', obstacles = obstacles', gameStatus = gameStatus'}
   
   where
     (x, y) = playerPos gs
@@ -125,10 +154,10 @@ updateGame dt gs
     p'     = p + vp * dt
 
     obstacles' = fmap (\(z, w) -> ((z - (400 * dt)), w)) (obstacles gs)
-    hasCrashed' = any (colidesWithPlayer (x, y')) obstacles' 
+    gameStatus' = if any (colidesWithPlayer (x, y')) obstacles' then GameOver else gameStatus gs
 
 main :: IO ()
-main = play window background 60 initialState drawGame handleEvent updateGame
+main = play window background 60 (initialState MainMenu) drawGame handleEvent updateGame
 
 {-
 main :: IO ()
