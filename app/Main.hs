@@ -8,7 +8,8 @@ import Data.Bifunctor (first, second)
 
 type Position = (Float, Float)
 
-{-| We have 6 different gamestatuses that can tell the game what to draw.
+{-| We have 6 different gamestatuses that can tell the game what to draw. 
+    They are very central in the logic of the game.
 -}
 data GameStatus = MainMenu | Running | Paused | GameOver | Controls | GameWon
   deriving (Eq, Show)
@@ -88,7 +89,7 @@ drawMainMenuScreen = pictures [ drawColorOverlay,
 drawControlsScreen :: Picture
 drawControlsScreen = pictures [ drawColorOverlay, 
                                 (drawText ((-180), (20)) 0.5 "Jump Dash"), 
-                                (drawText ((-250), (-100)) 0.2 "Press [Space] to jump. Don't hit red boxes."),
+                                (drawText ((-250), (-100)) 0.2 "Press [Space] to (double)jump. Don't hit red boxes."),
                                 (drawText ((-250), (-160)) 0.2 "Press [P] to pause the game"),
                                 (drawText ((-250), (-220)) 0.2 "Press [M] for main manu")
                               ]
@@ -121,6 +122,7 @@ drawColorOverlay = color (makeColor 0.5 0.5 0.5 0.9) $ rectangleSolid 1000 600
 drawText :: Position -> Float -> String -> Picture
 drawText (x, y) scaleFactor inputText = translate (x) (y) $ scale scaleFactor scaleFactor $ color white $ text inputText
 
+{-| A function that connects a drawing to a specific game status -}
 getTextScreen :: GameStatus -> Picture
 getTextScreen MainMenu = drawMainMenuScreen
 getTextScreen GameOver = drawGameOverScreen
@@ -217,9 +219,9 @@ main = do
 
 
 
----------------------------
--- Tests with QuickCheck --
----------------------------
+----------------------
+-- QuickCheck Tests --
+----------------------
 
 {-|  Testing the helperfunction colidesWithPlayer
      The collisioncalculations are important because they are central for determining when it is Game Over. 
@@ -233,6 +235,7 @@ collisionTests = [
   \a -> colidesWithPlayer a (second (+71) a) == False
   ]
 
+{-| Function that runs all tests, used in the main function -}
 runTests :: IO ()
 runTests = do 
   mapM_ quickCheck collisionTests
