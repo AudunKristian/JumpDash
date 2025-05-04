@@ -134,6 +134,7 @@ drawGame gs = pictures $
 
   where (x, y) = playerPos gs
 
+-- A helper-function that calculates if players and objects collide. The player is a box with the size 70 x 70.
 colidesWithPlayer :: Position -> Position -> Bool
 colidesWithPlayer (x1, y1) (x2, y2) = 
   let dx = abs (x1 - x2)
@@ -146,7 +147,6 @@ handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs  | not (isJumping gs) =
 handleEvent (EventKey (Char 'm') Down _ _) gs             | gameStatus gs `elem` [GameOver, Paused, Controls, GameWon] = (initialState MainMenu)
 handleEvent (EventKey (SpecialKey KeyEnter) Down _ _) gs  | gameStatus gs `elem` [MainMenu, GameOver, GameWon] = (initialState Running)
 handleEvent (EventKey (Char 'p') Down _ _) gs             | gameStatus gs == Running = gs { gameStatus = Paused}
-handleEvent (EventKey (Char 'r') Down _ _) gs             | gameStatus gs == Running = gs { gameStatus = Running}
 handleEvent (EventKey (Char 'r') Down _ _) gs             | gameStatus gs == Running = gs { gameStatus = Running}
 handleEvent (EventKey (Char 'c') Down _ _) gs             | gameStatus gs == MainMenu = gs { gameStatus = Controls}
 handleEvent _ gs = gs
@@ -194,29 +194,17 @@ main = do
 -- Tests with QuickCheck --
 ---------------------------
 
-
-
--- Testing unitcollisions
-
-testSymmetricCollision :: Position -> Position -> Bool
-testSymmetricCollision a b = colidesWithPlayer a b == colidesWithPlayer b a 
-
-data Axis = X | Y deriving (Show, Eq)
-
-testCollision :: Axis -> Bool -> Float -> Position -> Bool
-testCollision X expectedBoolean val a = colidesWithPlayer a (first (+val) a) == expectedBoolean
-testCollision Y expectedBoolean val a = colidesWithPlayer a (second (+val) a) == expectedBoolean
-
-collisionX, collisionY, noCollisionX, noCollisionY :: Position -> Bool
-collisionX a = testCollision X True 69 a
-collisionY a = testCollision Y True 69 a
-noCollisionX a = testCollision X False 71 a
-noCollisionY a = testCollision Y False 71 a
-
+-- Testing the helperfunction colidesWithPlayer
+-- The collisioncalculations are important because they are central for determining when it is Game Over.
+-- The player is 70 x 70 units big, and we are testing for collisions in the following cases:
 collisionTests :: [Position -> Bool]
-collisionTests = [collisionX, collisionY, noCollisionX, noCollisionY]
+collisionTests = [
+  \a -> colidesWithPlayer a (first (+69) a) == True,
+  \a -> colidesWithPlayer a (second (+69) a) == True, 
+  \a -> colidesWithPlayer a (first (+71) a) == False,
+  \a -> colidesWithPlayer a (second (+71) a) == False
+  ]
 
 runTests :: IO ()
 runTests = do 
-  quickCheck testSymmetricCollision
   mapM_ quickCheck collisionTests
