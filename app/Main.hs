@@ -8,9 +8,12 @@ import Data.Bifunctor (first, second)
 
 type Position = (Float, Float)
 
+{-| We have 6 different gamestatuses that can tell the game what to draw.
+-}
 data GameStatus = MainMenu | Running | Paused | GameOver | Controls | GameWon
   deriving (Eq, Show)
 
+-- | The GameState carries all dynamic information related to the game
 data GameState = GameState
   { playerPos :: Position,
     playerVelocityY :: Float,
@@ -22,6 +25,7 @@ data GameState = GameState
     gameStatus :: GameStatus
   }
 
+-- | Underneath are different variables used in the game 
 window :: Display
 window = InWindow "Jump Dash" (1000, 600) (10, 10)
 
@@ -46,6 +50,7 @@ initialObstacles =
   , (10000, 220), (10000, 290), (10000, 360), (10000, 430)
   ]
 
+-- | Underneath are different drawn objects
 drawPlayer :: Picture
 drawPlayer = pictures
   [ 
@@ -68,6 +73,10 @@ drawObstacle (x, y) = translate x y $ pictures
   ]
 
 
+{- | Most of the different GameStatuses have their own menu screen
+     These are drawn underneath. The only exception is the running gamestatus, 
+     which has continously updated game screen.
+-}  
 drawMainMenuScreen :: Picture
 drawMainMenuScreen = pictures [ drawColorOverlay, 
                                 (drawText ((-180), (20)) 0.5 "Jump Dash"), 
@@ -120,9 +129,15 @@ getTextScreen Paused   = drawPausedScreen
 getTextScreen GameWon   = drawGameWonScreen
 getTextScreen _  = blank
 
+{-| This is the initial state of the game, that can take a gamestatus as argument. 
+    It is used for starting a new game. 
+-}
+
 initialState :: GameStatus -> GameState
 initialState gameStatus = GameState (-350, -15) 0 False 0 0 initialObstacles [] gameStatus
 
+{-| This function will draw the game depending on the GameStatus.
+-}
 drawGame :: GameState -> Picture
 drawGame gs = pictures $
   [ translate x y $
@@ -134,14 +149,19 @@ drawGame gs = pictures $
 
   where (x, y) = playerPos gs
 
--- A helper-function that calculates if players and objects collide. The player is a box with the size 70 x 70.
+{-| A helper-function that calculates if players and objects collide. 
+    The player is a box with the size 70 x 70, and loses if an object his hit.
+-} 
 colidesWithPlayer :: Position -> Position -> Bool
 colidesWithPlayer (x1, y1) (x2, y2) = 
   let dx = abs (x1 - x2)
       dy = abs (y1 - y2)
   in dx <= 70 && dy <= 70
 
-
+{-| This functions handles events, and the game's state is updated accordingly. 
+    Different keys are possible to press in different gameStatuses of the game, 
+    this functions handles this. 
+-}
 handleEvent :: Event -> GameState -> GameState
 handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs  | not (isJumping gs) = gs { isJumping = True, playerVelocityY = 1080, playerRotationVelocity = -1500}
 handleEvent (EventKey (Char 'm') Down _ _) gs             | gameStatus gs `elem` [GameOver, Paused, Controls, GameWon] = (initialState MainMenu)
@@ -151,6 +171,13 @@ handleEvent (EventKey (Char 'r') Down _ _) gs             | gameStatus gs == Run
 handleEvent (EventKey (Char 'c') Down _ _) gs             | gameStatus gs == MainMenu = gs { gameStatus = Controls}
 handleEvent _ gs = gs
 
+
+{-| This function updates the game's state frequently when the game is running. 
+    All the movements are updated by this function. This function
+    takes care of both the player's jumps and the different obstacles.
+
+    When the game is not running nothing happens.
+-}
 updateGame :: Float -> GameState -> GameState
 updateGame dt gs 
  | gameStatus gs /= Running = gs
@@ -178,7 +205,7 @@ updateGame dt gs
         | otherwise -> gameStatus gs
       [] -> gameStatus gs
 
-
+{-| The main method that first runs tests, and then runs the game -}
 main :: IO ()
 main = do
   putStrLn "Running QuickCheck Tests ... "
@@ -194,9 +221,10 @@ main = do
 -- Tests with QuickCheck --
 ---------------------------
 
--- Testing the helperfunction colidesWithPlayer
--- The collisioncalculations are important because they are central for determining when it is Game Over.
--- The player is 70 x 70 units big, and we are testing for collisions in the following cases:
+{-|  Testing the helperfunction colidesWithPlayer
+     The collisioncalculations are important because they are central for determining when it is Game Over. 
+     The player is 70 x 70 units big, and we are testing for collisions in the following cases 
+-}
 collisionTests :: [Position -> Bool]
 collisionTests = [
   \a -> colidesWithPlayer a (first (+69) a) == True,

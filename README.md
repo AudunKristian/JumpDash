@@ -11,4 +11,4 @@ cabal build
 cabal run
 
 ## Tests
-The tests are iuincluded within the main file and are run before the game starts automatically.
+The tests are iuincluded within the main file and are run before the game starts automatically. I was originally planning to have them in a separate folder, but had problems with imports and configurations. 
