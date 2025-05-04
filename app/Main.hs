@@ -2,6 +2,9 @@ module Main (main) where
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
+import Test.QuickCheck hiding (scale)
+import Data.Bifunctor (first, second)
+
 
 type Position = (Float, Float)
 
@@ -175,5 +178,45 @@ updateGame dt gs
         | otherwise -> gameStatus gs
       [] -> gameStatus gs
 
+
 main :: IO ()
-main = play window background 60 (initialState MainMenu) drawGame handleEvent updateGame
+main = do
+  putStrLn "Running QuickCheck Tests ... "
+  runTests
+  putStrLn "Starting game"
+  play window background 60 (initialState MainMenu) drawGame handleEvent updateGame
+
+
+
+
+
+---------------------------
+-- Tests with QuickCheck --
+---------------------------
+
+
+
+-- Testing unitcollisions
+
+testSymmetricCollision :: Position -> Position -> Bool
+testSymmetricCollision a b = colidesWithPlayer a b == colidesWithPlayer b a 
+
+data Axis = X | Y deriving (Show, Eq)
+
+testCollision :: Axis -> Bool -> Float -> Position -> Bool
+testCollision X expectedBoolean val a = colidesWithPlayer a (first (+val) a) == expectedBoolean
+testCollision Y expectedBoolean val a = colidesWithPlayer a (second (+val) a) == expectedBoolean
+
+collisionX, collisionY, noCollisionX, noCollisionY :: Position -> Bool
+collisionX a = testCollision X True 69 a
+collisionY a = testCollision Y True 69 a
+noCollisionX a = testCollision X False 71 a
+noCollisionY a = testCollision Y False 71 a
+
+collisionTests :: [Position -> Bool]
+collisionTests = [collisionX, collisionY, noCollisionX, noCollisionY]
+
+runTests :: IO ()
+runTests = do 
+  quickCheck testSymmetricCollision
+  mapM_ quickCheck collisionTests
